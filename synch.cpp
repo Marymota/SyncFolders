@@ -19,6 +19,31 @@
 using namespace std;
 using namespace std::filesystem;
 
+// Folders syncronization 
+void syncFolders(const path& sourcePath, const path& replicaPath) {
+    // Iterate through the source directory
+    for (auto const& dir_entry : directory_iterator(sourcePath)) {
+        cout << "source: " << dir_entry.path() << endl;
+        cout << "replica: " << replicaPath << endl;
+        // Replicate source content paths to replica
+        auto const& source = dir_entry.path();
+        auto const& replica = replicaPath / source.filename();
+        
+        if (is_regular_file(source)) {
+            if(exists(replica) && last_write_time(replica) == last_write_time(source)) {
+                continue; // synchronized
+            } else {
+                if (exists(replica)) {
+                    // remove
+                }
+                else {
+                    // copy
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     // Confirm the number of recieved arguments
@@ -59,7 +84,7 @@ int main(int argc, char *argv[]) {
         }
 
         while (true) {
-            // synchFolders(sourcePath, replicaPath, syncInterval, logPath)
+            // syncFolders(sourcePath, replicaPath, syncInterval, logPath)
             // Block execution of a thread for the specified time
             this_thread::sleep_for(interval);
         }
