@@ -20,28 +20,35 @@ using namespace std;
 using namespace std::filesystem;
 
 // Folders syncronization 
-void syncFolders(const path& sourcePath, const path& replicaPath) {
+void syncFolders(const path& sourcePath, const path& replicaPath, const path& logFile) {
+
+    ofstream log(logFile, ios_base::app); // open log file in append mode
+
     // Iterate through the source directory
     for (auto const& dir_entry : directory_iterator(sourcePath)) {
-        cout << "source: " << dir_entry.path() << endl;
-        cout << "replica: " << replicaPath << endl;
         // Replicate source content paths to replica
         auto const& source = dir_entry.path();
         auto const& replica = replicaPath / source.filename();
         
         if (is_regular_file(source)) {
-            if(exists(replica) && last_write_time(replica) == last_write_time(source)) {
+            if(exists(replica) && last_write_time(source) == last_write_time(replica)) {
                 continue; // synchronized
-            } else {
-                if (exists(replica)) {
-                    // remove
-                }
-                else {
-                    // copy
-                }
             }
+            else
+            {
+                if (exists(replica)) {
+                    remove(replica);
+                    log << "Removed: " << replica << endl;
+                    //cout << "Removed: " << replica << endl;
+                }
+                copy_file(source, replica, copy_options::overwrite_existing);
+                log << "Copied: " << source << " to " << replica << endl;
+                //cout << "Copied: " << source << " to " << replica << endl;
+            }
+        
         }
     }
+    log.close();
 }
 
 int main(int argc, char *argv[]) {
@@ -56,6 +63,12 @@ int main(int argc, char *argv[]) {
     const path sourcePath = argv[1];
     const path replicaPath = argv[2];
     const path logPath = argv[3];
+
+    // Confirm that a log file exists or create one
+    if (!exists(logPath)) {
+        ofstream newLogFile(logPath);
+        newLogFile.close();
+    }
 
     // Verify argument validity as a time input
     const string syncInterval = argv[4];
@@ -78,13 +91,9 @@ int main(int argc, char *argv[]) {
             cerr << "Directory not found: " << argv[1] << endl;
             return 1;
         }
-        if (!exists(replicaPath)) {
-            // create a new folder and copy source folder contents
-            return 0;
-        }
 
         while (true) {
-            // syncFolders(sourcePath, replicaPath, syncInterval, logPath)
+            syncFolders(sourcePath, replicaPath, logPath);
             // Block execution of a thread for the specified time
             this_thread::sleep_for(interval);
         }
@@ -95,12 +104,5 @@ int main(int argc, char *argv[]) {
         cerr << "The value provided is out of range" << std::endl;
         return 1;
     }
-
     return 0;
-
-    // argv: source folder, replica folder, synch interval, log file path8
-    // Create()
-    // Copy()
-    // Remove()
-    // Log()
 }
